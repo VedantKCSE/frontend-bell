@@ -83,7 +83,7 @@ const Dashboard = () => {
 
   const handleEdit = async (id, newLecture) => {
     try {
-      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update-lecture/${id}`, {
+      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update/${id}`, {
         lecture: newLecture
       });
       console.log('Lecture updated successfully:', response.data);
