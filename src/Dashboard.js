@@ -59,7 +59,7 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('https://vedantk3.pythonanywhere.com/schedule');
+      const response = await axios.get('https://vedantk3.pythonanywhere.com/api/schedule');
       setSchedule(response.data.schedule);
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       if (response.data.schedule.hasOwnProperty(today)) {
@@ -83,7 +83,7 @@ const Dashboard = () => {
 
   const handleEdit = async (id, newLecture) => {
     try {
-      const response = await axios.put(`https://vedantk3.pythonanywhere.com/update-lecture/${id}`, {
+      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update-lecture/${id}`, {
         lecture: newLecture
       });
       console.log('Lecture updated successfully:', response.data);
