@@ -81,9 +81,11 @@ const Dashboard = () => {
     }
   };
 
-  const handleEdit = async (id, newLecture) => {
+  const handleEdit = async (id, newLecture, day) => {
     try {
-      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update/${id}`, {
+      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update`, {
+        day: day,
+        id: id,
         lecture: newLecture
       });
       console.log('Lecture updated successfully:', response.data);
@@ -98,6 +100,8 @@ const Dashboard = () => {
   if (error) {
     return <div>{error}</div>;
   }
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
     <Card>
@@ -142,7 +146,7 @@ const Dashboard = () => {
                     value={item.lecture}
                     onChange={(e) => {
                       const newLecture = e.target.value;
-                      handleEdit(item.id, newLecture);
+                      handleEdit(item.id, newLecture, today);
                     }}
                   >
                     {lectures.map((lecture) => (
@@ -159,7 +163,6 @@ const Dashboard = () => {
       )}
     </Card>
   );
-  
 };
 
 export default Dashboard;
