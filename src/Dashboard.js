@@ -7,51 +7,96 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 20px;
 `;
 
 const Card = styled.div`
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 85%;
+  margin: 50px auto;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
-  border-radius: 10px;
+  margin-top: 25px;
 `;
 
 const TableHead = styled.thead`
   font-weight: bold;
   text-align: center;
+  background-color: #4a90e2;
+  color: #ffffff;
+  border-radius: 10px;
 `;
 
 const TableBody = styled.tbody`
-  font-size: 15px;
+  font-size: 16px;
   text-align: center;
 `;
 
 const TableRow = styled.tr`
   &:nth-child(even) {
-    background-color: #f2f2f2;
+    background-color: #e8f1f7;
+  }
+  &:hover {
+    background-color: #d0e7ff;
   }
 `;
 
 const TableCell = styled.td`
-  padding: 8px;
+  padding: 15px;
+  border-bottom: 1px solid #d0e7ff;
 `;
 
-const Dropdown = styled.select`
-  width: 100%;
+const EditableCell = styled(TableCell)`
+  cursor: pointer;
+  &:hover {
+    background-color: #f0faff;
+  }
+`;
+
+const Input = styled.input`
+  width: 80%;
+  padding: 10px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 15px;
+`;
+
+const SaveButton = styled.button`
+  padding: 10px 20px;
+  background-color: #34c759;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #28a745;
+  }
+`;
+
+const Error = styled.div`
+  color: #ff4d4f;
+  font-weight: bold;
+  font-size: 18px;
 `;
 
 const Dashboard = () => {
   const [schedule, setSchedule] = useState([]);
   const [error, setError] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState([]);
-  const [lectures, setLectures] = useState([]);
+  const [editingField, setEditingField] = useState(null);
+  const [newStartTime, setNewStartTime] = useState('');
+  const [newEndTime, setNewEndTime] = useState('');
+  const [newLecture, setNewLecture] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -64,16 +109,6 @@ const Dashboard = () => {
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       if (response.data.schedule.hasOwnProperty(today)) {
         setTodaySchedule(response.data.schedule[today]);
-        // Collect all unique lecture names into a set
-        const lectureSet = new Set();
-        Object.values(response.data.schedule).forEach(daySchedule => {
-          daySchedule.forEach(item => {
-            lectureSet.add(item.lecture); // Add each lecture to the set
-          });
-        });
-
-        // Convert the set to an array and update state
-        setLectures(Array.from(lectureSet));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -81,24 +116,41 @@ const Dashboard = () => {
     }
   };
 
-  const handleEdit = async (id, newLecture, day) => {
+  const handleSave = async (id, day, field) => {
     try {
-      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/update`, {
-        day: day,
-        id: id,
-        lecture: newLecture
-      });
-      console.log('Lecture updated successfully:', response.data);
-      // Refresh data after update
+      let endpoint = 'update';
+      let data = { day, id };
+  
+      if (field === 'lecture') {
+        data.lecture = newLecture;
+        console.log('Updating lecture:', data); // Debug log
+      } else if (field === 'time') {
+        endpoint = 'update-timeslot';
+        data.start_time = newStartTime;
+        data.end_time = newEndTime;
+        console.log('Updating time slot:', data); // Debug log
+      }
+  
+      const response = await axios.put(`https://vedantk3.pythonanywhere.com/api/${endpoint}`, data);
+      console.log('Update successful:', response.data);
+  
+      // Refresh the data after the update
       fetchData();
+  
+      // Clear the editing fields
+      setEditingField(null);
+      setNewStartTime('');
+      setNewEndTime('');
+      setNewLecture('');
     } catch (error) {
-      console.error('Error updating lecture:', error);
-      setError('Error updating lecture. Please try again.');
+      console.error('Error updating:', error);
+      setError('Error updating. Please try again.');
     }
   };
+  
 
   if (error) {
-    return <div>{error}</div>;
+    return <Error>{error}</Error>;
   }
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -130,32 +182,55 @@ const Dashboard = () => {
           <TableHead>
             <TableRow>
               <TableCell>Start Time</TableCell>
-              <TableCell>End Time</TableCell>
               <TableCell>Lecture</TableCell>
-              <TableCell>Select Lecture</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {todaySchedule.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>{item.start_time}</TableCell>
-                <TableCell>{item.end_time}</TableCell>
-                <TableCell>{item.lecture}</TableCell>
-                <TableCell>
-                  <Dropdown
-                    value={item.lecture}
-                    onChange={(e) => {
-                      const newLecture = e.target.value;
-                      handleEdit(item.id, newLecture, today);
-                    }}
-                  >
-                    {lectures.map((lecture) => (
-                      <option key={lecture} value={lecture}>
-                        {lecture}
-                      </option>
-                    ))}
-                  </Dropdown>
-                </TableCell>
+                <EditableCell>
+                  {editingField === `time-${item.id}` ? (
+                    <>
+                      <Input
+                        type="time"
+                        value={newStartTime || item.start_time}
+                        onChange={(e) => setNewStartTime(e.target.value)}
+                      />
+                      <Input
+                        type="time"
+                        value={newEndTime || item.end_time}
+                        onChange={(e) => setNewEndTime(e.target.value)}
+                      />
+                      <SaveButton onClick={() => handleSave(item.id, today, 'time')}>
+                        Save
+                      </SaveButton>
+                    </>
+                  ) : (
+                    <>
+                      <div onClick={() => setEditingField(`time-${item.id}`)}>
+                        {item.start_time} - {item.end_time}
+                      </div>
+                    </>
+                  )}
+                </EditableCell>
+                <EditableCell>
+                  {editingField === `lecture-${item.id}` ? (
+                    <>
+                      <Input
+                        type="text"
+                        value={newLecture || item.lecture}
+                        onChange={(e) => setNewLecture(e.target.value)}
+                      />
+                      <SaveButton onClick={() => handleSave(item.id, today, 'lecture')}>
+                        Save
+                      </SaveButton>
+                    </>
+                  ) : (
+                    <div onClick={() => setEditingField(`lecture-${item.id}`)}>
+                      {item.lecture}
+                    </div>
+                  )}
+                </EditableCell>
               </TableRow>
             ))}
           </TableBody>
